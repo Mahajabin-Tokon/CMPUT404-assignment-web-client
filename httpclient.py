@@ -81,7 +81,7 @@ class HTTPClient(object):
             my_path = parsed_url.path
         else:
             my_path = '/'
-        
+        # Check if port exists, if not, set port to 80
         if port == None:
             port = 80
         self.connect(host, port)
@@ -116,7 +116,7 @@ class HTTPClient(object):
             my_path = parsed_url.path
         else:
             my_path = '/'
-        
+        # Check if port exists, if not, set port to 80
         if port == None:
             port = 80
         self.connect(host, port)
