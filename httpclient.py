@@ -18,11 +18,13 @@
 # Write your own HTTP GET and POST
 # The point is to understand what you have to send and get experience with it
 
+from queue import Empty
 import sys
 import socket
 import re
 # you may use urllib to encode data appropriately
 import urllib.parse
+from urllib.parse import urlparse
 
 def help():
     print("httpclient.py [GET/POST] [URL]\n")
@@ -68,13 +70,79 @@ class HTTPClient(object):
         return buffer.decode('utf-8')
 
     def GET(self, url, args=None):
-        code = 500
-        body = ""
+        # Parse url
+        parsed_url = urlparse(url)
+        # Get port and host
+        port = parsed_url.port
+        host = parsed_url.hostname
+        # Get path and check whether path exists
+        my_path = parsed_url.path
+        if my_path:
+            my_path = parsed_url.path
+        else:
+            my_path = '/'
+        
+        if port == None:
+            port = 80
+        self.connect(host, port)
+
+        # The GET request
+        get_request = "GET "+my_path+" HTTP/1.1\r\nHost: "+host+"\r\nUser-Agent:Linux\r\nConnection: close\r\n\r\n"
+
+        # Send the request
+        self.sendall(get_request)
+        # Get data from the request that was sent
+        data_received = self.recvall(self.socket)
+        # Parse through data and get code
+        headers = data_received.split('\r\n')
+        code_header = headers[0]
+        code = int(code_header.split()[1])
+        # Parse through data and get body
+        body = data_received.split('\r\n\r\n')[1]
+
+        # Close connection
+        self.close()
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
+        # Parse url
+        parsed_url = urlparse(url)
+        # Get port and host
+        port = parsed_url.port
+        host = parsed_url.hostname
+        # Get path and check whether path exists
+        my_path = parsed_url.path
+        if my_path:
+            my_path = parsed_url.path
+        else:
+            my_path = '/'
+        
+        if port == None:
+            port = 80
+        self.connect(host, port)
+
+        # Check if there were any arguments, if not, POST without arguments
+        if args == None:
+            post_request = "POST "+my_path+" HTTP/1.1\r\nHost: "+host+"Content-Type: application/x-www-form-urlencoded\r\nUser-Agent:Linux\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        # If yes, get arguments and argument length and do POST
+        else:
+            args = urllib.parse.urlencode(args)
+            length_of_args = str(len(args))
+            post_request = "POST "+my_path+" HTTP/1.1\r\nHost: "+host+"Content-Type: application/x-www-form-urlencoded\r\nUser-Agent:Linux\r\nContent-Length: "+length_of_args+"\r\nConnection: close\r\n\r\n"+args+"\r\n\r\n"
+
+        # Send the request
+        self.sendall(post_request)
+        # Get data from the request that was sent
+        data_received = self.recvall(self.socket)
+        # Parse through data and get code
+        headers = data_received.split('\r\n')
+        code_header = headers[0]
+        code = int(code_header.split()[1])
+        # Parse through data and get body
+        body = data_received.split('\r\n\r\n')[1]
+
+        # Close connection
+        self.close()
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
